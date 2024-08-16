@@ -219,7 +219,8 @@ void TankBase::Attack()
         ->SetMap(map_)
         ->SetDirection(direction_);
     GAME_MGR().GetTimer10()->RegistListener(bullet_);
-    GAME_MGR().PlayAttack();
+    // TODO: mix all of sounds
+    // GAME_MGR().PlayAttack();
 }
 
 void TankBase::die()

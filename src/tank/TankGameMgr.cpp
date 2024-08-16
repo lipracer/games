@@ -12,6 +12,34 @@ namespace games
 {
 namespace tank
 {
+
+std::istream& operator>>(std::istream& is, EnemyTankManager::Config& cfg)
+{
+    std::string line;
+    std::getline(is, line);
+    if (line.find("[tank]") == std::string::npos)
+    {
+        return is;
+    }
+
+    auto GetStringValue = [](const std::string& str)
+    { return std::stol(str.data() + str.find("=") + 1); };
+
+#define GET_VALUE(v)        \
+    std::getline(is, line); \
+    cfg.v = GetStringValue(line);
+
+    GET_VALUE(speed)
+    GET_VALUE(life_count)
+    GET_VALUE(free_path)
+    GET_VALUE(total)
+    GET_VALUE(max_alive)
+
+#undef GET_VALUE
+
+    return is;
+}
+
 EnemyTankManager::EnemyTankManager()
 {
     rect_[0] = Rect(0, 0, TANK_W, TANK_H);
@@ -26,14 +54,6 @@ void EnemyTankManager::SetPass(size_t p)
     Generate(0);
     Generate(1);
     Generate(2);
-
-    size_t total_size = (MAP_W / 2 - 1) * (MAP_H / 2 - 1) / 3 + 10000;
-    do
-    {
-        gq_.push_back(0);
-        gq_.push_back(1);
-        gq_.push_back(2);
-    } while (total_size--);
 }
 
 void EnemyTankManager::Generate(size_t index)
@@ -43,6 +63,39 @@ void EnemyTankManager::Generate(size_t index)
         ->SetSpeed(cfg_[index].speed)
         ->SetMap(&GAME_MGR().GetMap());
     t->SetFreePath(cfg_[index].free_path)->SetLiftCount(cfg_[index].life_count);
+    enemy_tank_[index].emplace_back(t);
+    --cfg_[index].total;
+}
+
+void EnemyTankManager::TryGenerate()
+{
+    for (auto iter = gq_.begin(); iter != gq_.end();)
+    {
+        bool delay = GAME_MGR().CollsionDetectionTank(rect_[*iter]);
+        if (!delay)
+        {
+            Generate(*iter);
+            iter = gq_.erase(iter);
+            continue;
+        }
+        iter++;
+    }
+}
+
+void EnemyTankManager::PrepareGenerate()
+{
+    for (size_t i = 0; i < 3; ++i)
+    {
+        RemoveDiedObj(enemy_tank_[i]);
+        if (cfg_[i].total)
+        {
+            auto count = enemy_tank_[i].size();
+            if (count < cfg_[i].max_alive)
+            {
+                gq_.push_back(i);
+            }
+        }
+    }
 }
 
 void EnemyTankManager::update()
@@ -52,46 +105,17 @@ void EnemyTankManager::update()
         > 5000)
     {
         st_ = cur_st_;
-        for (auto iter = gq_.begin(); iter != gq_.end();)
-        {
-            bool delay = std::any_of(GAME_MGR().objs().begin(), GAME_MGR().objs().end(),
-                                     [&](auto o)
-                                     {
-                                         if (auto t = o.template cast<TankBase>())
-                                         {
-                                             if (t->rect().overlap(rect_[*iter]))
-                                             {
-                                                 return true;
-                                             }
-                                         }
-                                         return false;
-                                     });
-            if (!delay)
-            {
-                Generate(*iter);
-                iter = gq_.erase(iter);
-                continue;
-            }
-            iter++;
-        }
+        TryGenerate();
+        PrepareGenerate();
     }
 }
 
 void EnemyTankManager::LoadConfig(std::ifstream& ios)
 {
-    auto GetStringValue = [](const std::string& str)
-    { return std::stol(str.data() + str.find(":") + 1); };
     memset(&cfg_, 0, sizeof(cfg_));
-    std::string line;
     for (size_t i = 0; i < 3; ++i)
     {
-        std::getline(ios, line);
-        std::getline(ios, line);
-        cfg_[i].speed = GetStringValue(line);
-        std::getline(ios, line);
-        cfg_[i].life_count = GetStringValue(line);
-        std::getline(ios, line);
-        cfg_[i].free_path = GetStringValue(line);
+        ios >> cfg_[i];
     }
 }
 
@@ -152,7 +176,6 @@ void TankGameMgr::InitGame(void* renderer)
     home_obj_ = new HomeObject();
     home_obj_->SetRect(Rect(Point(WINDOW_W / 2, WINDOW_H - ELEMENT_H), TANK_W, TANK_H))
         ->SetImage(home_img_);
-    CreateLeftPlayer();
 }
 
 void TankGameMgr::PlayAttack()
@@ -215,7 +238,6 @@ void TankGameMgr::Dispatch_A_Release()
 void TankGameMgr::Dispatch_Q_Press()
 {
     GameOver();
-    em_->clear();
 }
 void TankGameMgr::Dispatch_0_Press()
 {
@@ -243,59 +265,63 @@ void TankGameMgr::RegistObject(SharedObject<ObjectBase>&& obj)
     objs_.push_front(std::move(obj));
 }
 
-void TankGameMgr::CollsionDetection()
+void TankGameMgr::CollsionDetectionBullet()
 {
     for (auto& o0 : moveable_objs_)
     {
         for (auto& o1 : moveable_objs_)
         {
-            if (o0 != o1 && o0->alive() && o1->alive())
+            if (o0 != o1 && o0->alive() && o1->alive() && o0->rect().overlap(o1->rect()))
             {
-                if (o0->rect().overlap(o1->rect()))
+                if (auto b = o0.cast<Bullet>())
                 {
-                    if (auto b = o0.cast<Bullet>())
+                    if (b->MeetToDie(o1.get()))
                     {
-                        if (b->MeetToDie(o1.get()))
-                        {
-                            continue;
-                        }
+                        continue;
                     }
-                    else if (auto b = o1.cast<Bullet>())
+                }
+                else if (auto b = o1.cast<Bullet>())
+                {
+                    if (b->MeetToDie(o0.get()))
                     {
-                        if (b->MeetToDie(o0.get()))
-                        {
-                            continue;
-                        }
+                        continue;
                     }
                 }
             }
         }
     }
-    for (auto o0 : moveable_objs_)
-    {
-        o0->UpdatePrevRect();
-    }
+}
+
+bool TankGameMgr::CollsionDetectionTank(const Rect& r)
+{
+    return alivable_map_.CollsionDetection(r);
 }
 
 void TankGameMgr::GameOver()
 {
     home_obj_->SetImage(bad_home_img_);
-    for (auto o : objs_)
-    {
-        o->die();
-    }
-    timer10_->clear();
-    timer20_->clear();
-    timer100_->clear();
-    timer1000_->clear();
-
-    RemoveDiedObj(moveable_objs_);
-    RemoveDiedObj(objs_);
     game_over_ = true;
 }
 
 void TankGameMgr::UpdateMap()
 {
+    // clear died tank because collsion detection will product died object
+    for (auto& o : objs_)
+    {
+        if (auto tank = dynamic_cast<TankBase*>(o.get()))
+        {
+            if (!tank->alive())
+            {
+                // collsion detection only detection current location, but the
+                // alivable_map didn't update now, so we need clear previous rect
+                alivable_map_.ClearMap(tank, tank->PrevRect());
+            }
+        }
+    }
+
+    RemoveDiedObj(objs_);
+
+    // first collsion detection
     for (auto& o : objs_)
     {
         if (auto tank = dynamic_cast<TankBase*>(o.get()))
@@ -310,6 +336,9 @@ void TankGameMgr::UpdateMap()
         }
     }
 
+    // second collsion detection, after first collsion some object alread release
+    // position, therefore we need to constantly detect  objects that  can move until all
+    // objects cannot move
     for (auto& o : objs_)
     {
         if (auto tank = dynamic_cast<TankBase*>(o.get()))
@@ -330,6 +359,7 @@ void TankGameMgr::UpdateMap()
             ob->UpdatePrevRect();
         }
     }
+    // std::cout << alivable_map_.to_string() << std::endl;
 }
 
 void TankGameMgr::DispatchMessage()
@@ -337,15 +367,29 @@ void TankGameMgr::DispatchMessage()
     if (timer10_->update() || timer20_->update() || timer100_->update()
         || timer1000_->update())
     {
-        em_->update();
+        if (!game_over_)
+        {
+            em_->update();
 
-        RemoveDiedObj(moveable_objs_);
+            RemoveDiedObj(moveable_objs_);
 
-        UpdateMap();
+            CollsionDetectionBullet();
 
-        CollsionDetection();
-
-        RemoveDiedObj(objs_);
+            UpdateMap();
+        }
+        else
+        {
+            for (auto& o : objs_)
+            {
+                if (o->ref_count() && o->alive())
+                {
+                    o->die();
+                }
+                o->draw();
+            }
+            ClearTimer();
+            em_->clear();
+        }
     }
     for (auto& o : objs_)
     {
@@ -381,6 +425,7 @@ void TankGameMgr::SetPass(size_t pass)
     ResetTimer();
 
     em_->SetPass(pass);
+    CreateLeftPlayer();
 }
 } // namespace tank
 } // namespace games

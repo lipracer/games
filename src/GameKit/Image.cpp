@@ -53,23 +53,24 @@ void Image::draw(const Rect& rect)
 
 Sound::Sound(const std::string& file)
 {
-    std::ifstream ifs(file);
-    EXPECT(ifs.is_open(), "can't not open file!");
+    // TODO: debug core dump
+    // std::ifstream ifs(file);
+    // EXPECT(ifs.is_open(), "can't not open file!");
 
-    ifs.seekg(0, std::ios::end);
-    int64_t file_length = ifs.tellg();
-    // file_length = 44100;
+    // ifs.seekg(0, std::ios::end);
+    // int64_t file_length = ifs.tellg();
+    // // file_length = 44100;
 
-    const SDL_AudioSpec spec = {SDL_AUDIO_S16, 2, 44100};
-    stream_ =
-        SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
-    EXPECT(stream_, "can't not open stream!");
+    // const SDL_AudioSpec spec = {SDL_AUDIO_S16, 2, 44100};
+    // stream_ =
+    //     SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    // EXPECT(stream_, "can't not open stream!");
 
-    ifs.seekg(0, std::ios::beg);
-    buffer_.resize(file_length);
-    ifs.read(buffer_.data(), buffer_.size());
+    // ifs.seekg(0, std::ios::beg);
+    // buffer_.resize(file_length);
+    // ifs.read(buffer_.data(), buffer_.size());
 
-    ifs.close();
+    // ifs.close();
 }
 
 Sound::~Sound()

@@ -11,6 +11,7 @@ class Image
 public:
     Image(void* renderer, const std::string& name);
 
+    /// draw image on screen
     void draw(const Rect& rect = {});
 
     void SetAngle(double angle)

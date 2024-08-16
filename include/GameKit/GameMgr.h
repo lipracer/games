@@ -44,8 +44,12 @@ public:
     virtual size_t Window_W() = 0;
     virtual size_t Window_H() = 0;
 
+    /// image resource require rendering information
     virtual void InitGame(void* renderer) = 0;
 
+    virtual void GameOver() = 0;
+
+    /// processing keyword message
 #define DEFINE_DISPATCH_PRSS_FUNC(key) \
     virtual void Dispatch_##key##_Press() {}
 #define DEFINE_DISPATCH_RELEASE_FUNC(key) \
@@ -63,6 +67,7 @@ class GameMgrFactory
 public:
     static GameMgrFactory& instance();
 
+    /// create game manager, eg: tank
     std::unique_ptr<GameMgr> CreateMgr(const std::string& game);
 
     void RegistGameMgr(const std::string& game,

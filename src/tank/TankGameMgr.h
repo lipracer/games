@@ -23,10 +23,14 @@ public:
         size_t speed;
         size_t life_count;
         size_t free_path;
+        size_t total;
+        size_t max_alive;
+        friend std::istream& operator>>(std::istream&, Config& cfg);
     };
 
     EnemyTankManager();
 
+    /// generate enemy tanks
     void Generate(size_t index);
 
     void update();
@@ -39,16 +43,27 @@ public:
 
     void SetPass(size_t p);
 
+    /// load enemy tank's config
     void LoadConfig(std::ifstream& ios);
+
+    void TryGenerate();
+    void PrepareGenerate();
 
     void clear()
     {
         gq_.clear();
+        for (auto& l : enemy_tank_)
+        {
+            l.clear();
+        }
     }
 
 private:
     Rect rect_[3];
     Config cfg_[3];
+
+    std::list<SharedObject<Object>> enemy_tank_[3];
+
     std::list<size_t> gq_;
     decltype(std::chrono::steady_clock::now()) st_ = std::chrono::steady_clock::now();
 };
@@ -67,6 +82,7 @@ public:
     void CreateLeftPlayer();
     void CreateRightPlayer();
 
+    /// device message dispatch
     void Dispatch_LEFT_Press() override;
     void Dispatch_RIGHT_Press() override;
     void Dispatch_UP_Press() override;
@@ -165,19 +181,31 @@ public:
         timer5000_->reset();
     }
 
+    void ClearTimer()
+    {
+        timer10_->clear();
+        timer20_->clear();
+        timer100_->clear();
+        timer500_->clear();
+        timer1000_->clear();
+        timer5000_->clear();
+    }
+
     void RegistMoveableObject(Object* obj)
     {
         moveable_objs_.push_back(obj);
     }
 
-    void CollsionDetection();
+    void CollsionDetectionBullet();
+
+    bool CollsionDetectionTank(const Rect& r);
 
     std::list<SharedObject<ObjectBase>>& objs()
     {
         return objs_;
     }
 
-    void GameOver();
+    void GameOver() override;
 
     void PlayAttack();
 
