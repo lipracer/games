@@ -17,4 +17,13 @@ std::ostream& operator<<(std::ostream& os, const Rect& r)
     return os;
 }
 
+void View::SetImage(const std::shared_ptr<Image>& img)
+{
+    image_ = img;
+}
+
+void View::SetBackground() {
+    
+}
+
 } // namespace games

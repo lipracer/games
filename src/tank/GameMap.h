@@ -211,7 +211,7 @@ public:
 
 private:
     std::vector<std::vector<StorageType>> map_;
-    std::unordered_map<size_t, Object*> location_map_;
+    // std::unordered_map<size_t, Object*> location_map_;
 };
 
 } // namespace tank

@@ -6,19 +6,22 @@ namespace games
 {
 namespace tank
 {
-size_t Animation::MillPerFrame()
+size_t AnimationBase::MillPerFrame()
 {
     return 20;
 }
 
-Animation::Animation(size_t frames) : ObjectBase(), frames_(frames) {}
+AnimationBase::AnimationBase(size_t frames, const std::function<void(void)>& func)
+    : ObjectBase(), frames_(frames), func_(func)
+{
+}
 
-void Animation::Play()
+void AnimationBase::Play()
 {
     PlayAfter(std::chrono::milliseconds(0));
 }
 
-void Animation::update()
+void AnimationBase::update()
 {
     if (this->animation_frame_++ < this->frames_)
     {
@@ -27,25 +30,26 @@ void Animation::update()
         if (cur_dur > delay_)
         {
             animation_frame_++;
+            func_();
         }
         return;
     }
     this->EndPlay();
 }
 
-void Animation::PlayAfter(std::chrono::milliseconds dur)
+void AnimationBase::PlayAfter(std::chrono::milliseconds dur)
 {
     delay_ = dur;
 }
 
-void Animation::EndPlay()
+void AnimationBase::EndPlay()
 {
     die();
 }
 
 BlinkAnimation::BlinkAnimation(const SharedPtr<Image>& img, const Rect& rect,
                                std::chrono::milliseconds dur)
-    : Animation(50), img_(img)
+    : Animation<BlinkAnimation>(50), img_(img)
 {
 }
 
@@ -54,11 +58,11 @@ void BlinkAnimation::draw()
     img_->draw();
 }
 
-void BlinkAnimation::update() {}
+void BlinkAnimation::change() {}
 
 ZoomAnimation::ZoomAnimation(const SharedPtr<Image>& img, const Rect& rect,
                              std::chrono::milliseconds dur)
-    : Animation(50), img_(img), rect_(rect), cur_rect_(rect.center(), 0.0, 0.0)
+    : Animation<ZoomAnimation>(50), img_(img), rect_(rect), cur_rect_(rect.center(), 0.0, 0.0)
 {
     GAME_MGR().GetTimer10()->RegistListener(this);
 }
@@ -68,9 +72,8 @@ void ZoomAnimation::draw()
     img_->draw(cur_rect_);
 }
 
-void ZoomAnimation::update()
+void ZoomAnimation::change()
 {
-    Animation::update();
     float z = CurFrame();
     z = z / Frames();
     cur_rect_ = Rect(cur_rect_.center(), rect_.w * z, rect_.h * z);

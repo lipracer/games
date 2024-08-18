@@ -151,8 +151,8 @@ void AlivableObjectMap::MaskMap(Object* o, const Rect& r)
     lk.location.x = col;
     lk.location.y = row;
 
-    o->increase_ref();
-    location_map_.emplace(lk.key, o);
+    // o->increase_ref();
+    // location_map_.emplace(lk.key, o);
 
     size_t col_e = r.right() / MIN_MAP_ELEMENT;
     size_t row_e = r.bottom() / MIN_MAP_ELEMENT;
@@ -171,8 +171,8 @@ void AlivableObjectMap::ClearMap(Object* o, const Rect& r)
     lk.location.x = col;
     lk.location.y = row;
 
-    o->decrease_ref();
-    location_map_.erase(lk.key);
+    // o->decrease_ref();
+    // location_map_.erase(lk.key);
 
     size_t col_e = r.right() / MIN_MAP_ELEMENT;
     size_t row_e = r.bottom() / MIN_MAP_ELEMENT;

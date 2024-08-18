@@ -19,9 +19,11 @@ public:
         angle_ = angle;
     }
 
+    void SetBackground(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
 private:
-    void* renderer = nullptr;
-    void* texture = nullptr;
+    void* renderer_ = nullptr;
+    void* texture_ = nullptr;
     double angle_ = 0.0;
 };
 

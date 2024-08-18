@@ -79,6 +79,11 @@ public:
 
     void InitGame(void* renderer) override;
 
+    size_t PassCount() override
+    {
+        return 1;
+    }
+
     void CreateLeftPlayer();
     void CreateRightPlayer();
 

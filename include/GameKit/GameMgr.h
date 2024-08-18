@@ -49,6 +49,8 @@ public:
 
     virtual void GameOver() = 0;
 
+    virtual size_t PassCount() = 0;
+
     /// processing keyword message
 #define DEFINE_DISPATCH_PRSS_FUNC(key) \
     virtual void Dispatch_##key##_Press() {}
@@ -77,6 +79,16 @@ public:
         creators_.emplace(game, creator);
     }
 
+    std::vector<std::string> GameList()
+    {
+        std::vector<std::string> list;
+        for (auto& c : creators_)
+        {
+            list.push_back(c.first);
+        }
+        return list;
+    }
+
 private:
     std::unordered_map<std::string, std::function<GameMgr*(void)>> creators_;
 };
@@ -99,6 +111,11 @@ public:
     T* CurrentGameMgr()
     {
         return dynamic_cast<T*>(CurrentGameMgr());
+    }
+
+    std::vector<std::string> GameList()
+    {
+        return GameMgrFactory::instance().GameList();
     }
 
 private:

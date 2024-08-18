@@ -227,11 +227,27 @@ void TankBase::die()
 {
     --alive_;
     if (alive_)
+    {
+        DieWarning();
         return;
+    }
     auto animation = CreateAnimation<ZoomAnimation>(GAME_MGR().GetBoomImage(), rect_,
                                                     std::chrono::milliseconds(1000));
     animation->Play();
     Object::die();
+}
+
+TankBase* TankBase::SetLiftCount(size_t c)
+{
+    alive_ = c;
+    return this;
+}
+
+void TankBase::DieWarning()
+{
+    auto animation =
+        CreateAnimation<AnimationBase>(10, [&]() { img_->SetBackground(255, 0, 0, 1); });
+    animation->Play();
 }
 
 void MyTank::update()
@@ -255,12 +271,7 @@ void MyTank::Attack()
 
 void MyTank::die()
 {
-    --alive_;
-    if (alive_)
-        return;
-    auto animation = CreateAnimation<ZoomAnimation>(GAME_MGR().GetBoomImage(), rect_,
-                                                    std::chrono::milliseconds(1000));
-    animation->Play();
+    TankBase::die();
     BringBackToLife();
 }
 
@@ -274,9 +285,11 @@ void MyTank::OnAttackPress()
 {
     state_ = kPress;
 }
+
 void MyTank::OnAttackRelease()
 { /*state_ = kRelease;*/
 }
+
 void MyTank::SetState(State s)
 {
     state_ = s;

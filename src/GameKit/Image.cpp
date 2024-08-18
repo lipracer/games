@@ -22,28 +22,34 @@ SDL_FRect CastToSdl<SDL_FRect>(const Rect& rect)
     return result;
 }
 
-Image::Image(void* renderer, const std::string& name) : renderer(renderer)
+Image::Image(void* renderer, const std::string& name) : renderer_(renderer)
 {
     SDL_Surface* loadedSurface = SDL_LoadBMP(name.c_str());
     if (!loadedSurface)
         return;
 
-    texture = SDL_CreateTextureFromSurface(reinterpret_cast<SDL_Renderer*>(renderer),
-                                           loadedSurface);
+    texture_ = SDL_CreateTextureFromSurface(reinterpret_cast<SDL_Renderer*>(renderer),
+                                            loadedSurface);
     SDL_DestroySurface(loadedSurface); // Free the surface after creating texture
+}
+
+void Image::SetBackground(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    SDL_SetTextureAlphaMod(reinterpret_cast<SDL_Texture*>(texture_), a);
+    SDL_SetTextureColorMod(reinterpret_cast<SDL_Texture*>(texture_), r, g, b);
 }
 
 void Image::draw(const Rect& rect)
 {
-    if (!texture)
+    if (!texture_)
         std::cerr << __func__ << " empty texture" << std::endl;
     auto sdl_rect = CastToSdl<SDL_FRect>(rect);
     if (SDL_fabsf(rect.w) < 0.000001)
     {
         return;
     }
-    SDL_RenderTextureRotated(reinterpret_cast<SDL_Renderer*>(renderer),
-                             reinterpret_cast<SDL_Texture*>(texture), nullptr,
+    SDL_RenderTextureRotated(reinterpret_cast<SDL_Renderer*>(renderer_),
+                             reinterpret_cast<SDL_Texture*>(texture_), nullptr,
                              rect.valid() ? &sdl_rect : nullptr, angle_, nullptr,
                              SDL_FLIP_NONE);
     // SDL_RenderTexture(reinterpret_cast<SDL_Renderer*>(renderer),
@@ -63,7 +69,8 @@ Sound::Sound(const std::string& file)
 
     // const SDL_AudioSpec spec = {SDL_AUDIO_S16, 2, 44100};
     // stream_ =
-    //     SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    //     SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL,
+    //     NULL);
     // EXPECT(stream_, "can't not open stream!");
 
     // ifs.seekg(0, std::ios::beg);

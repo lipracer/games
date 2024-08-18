@@ -2,10 +2,13 @@
 
 #include <iostream>
 #include <sstream>
+#include <string>
 
 namespace games
 {
 
+namespace Log
+{
 struct LogWrap
 {
     template <typename T>
@@ -15,13 +18,33 @@ struct LogWrap
         return *this;
     }
 
+    LogWrap(const std::string& str)
+    {
+        ss_ << str;
+    }
+
     ~LogWrap()
     {
         std::cout << ss_.str() << std::endl;
     }
 
-    std::istringstream ss_;
+    std::stringstream ss_;
 };
+inline LogWrap info()
+{
+    return LogWrap("[INFO]");
+}
+
+inline LogWrap warning()
+{
+    return LogWrap("[WARN]");
+}
+
+inline LogWrap error()
+{
+    return LogWrap("[ERROR]");
+}
+} // namespace Log
 
 #define EXPECT(p, msg)                            \
     do                                            \

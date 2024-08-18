@@ -2,6 +2,21 @@ cmake_minimum_required(VERSION 3.10)
 
 project(games)
 
+#set(GAMES_COMPILE_OPTIONS -Wall -Wextra -Wno-unused-parameter 
+#-Wno-unused-function -Wno-unused-result -Wno-missing-field-initializers 
+#-Wno-unknown-pragmas -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas 
+#-Wno-strict-overflow -Wno-strict-aliasing -Wno-missing-braces -Wno-uninitialized
+#-Wno-sign-compare -Wno-switch -Wno-implicit-fallthrough
+#-Wno-return-type)
+#
+#if(NOT CMAKE_SYSTEM_NAME MATCHES "Darwin")
+#  list(APPEND GAMES_COMPILE_OPTIONS -Wno-cast-function-type)
+#else()
+#  list(APPEND GAMES_COMPILE_OPTIONS -Wno-semicolon-before-method-body)
+#endif()
+#
+#set(compile_options ${GAMES_COMPILE_OPTIONS})
+
 add_library(HeaderLib INTERFACE)
 target_include_directories(HeaderLib INTERFACE ${CMAKE_SOURCE_DIR}/include)
 

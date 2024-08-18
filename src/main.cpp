@@ -28,7 +28,21 @@ inline games::GameMgr* CurrentMgr()
 
 int SDL_AppInit(void** appstate, int argc, char* argv[])
 {
-    games::GameContext::instance().SwitchGame(argv[1]);
+    auto game_list = games::GameContext::instance().GameList();
+    size_t game_index = 1;
+    std::cout << "game menu:" << std::endl;
+    for (auto game : game_list)
+    {
+        std::cout << game_index << " " << game << std::endl;
+    }
+    std::cout << "please input game index:" << std::endl;
+    std::cin >> game_index;
+    if (game_index - 1 >= game_list.size())
+    {
+        std::cerr << "invalid index:" << game_index << std::endl;
+        exit(1);
+    }
+    games::GameContext::instance().SwitchGame(game_list[game_index - 1]);
     // init the library, here we make a window so we only need the Video
     // capabilities.
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))

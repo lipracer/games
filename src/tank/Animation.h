@@ -5,12 +5,12 @@ namespace games
 {
 namespace tank
 {
-class Animation : public ObjectBase
+class AnimationBase : public ObjectBase
 {
 public:
     static size_t MillPerFrame();
 
-    Animation(size_t frames);
+    AnimationBase(size_t frames, const std::function<void(void)>& func);
 
     void Play();
     void PlayAfter(std::chrono::milliseconds dur);
@@ -27,11 +27,13 @@ public:
 
     void EndPlay();
 
-    void update() override;
+    void update() final;
+
+    void draw() override {}
 
     std::string name() override
     {
-        return "Animation";
+        return "AnimationBase";
     }
 
 protected:
@@ -39,28 +41,39 @@ protected:
     size_t animation_frame_ = 0;
     decltype(std::chrono::steady_clock::now()) start_pt_;
     std::chrono::milliseconds delay_;
+    std::function<void(void)> func_;
 };
 
-class BlinkAnimation : public Animation
+template <typename T>
+class Animation : public AnimationBase
+{
+public:
+    Animation(size_t frames)
+        : AnimationBase(frames, [=]() { static_cast<T*>(this)->change(); })
+    {
+    }
+};
+
+class BlinkAnimation : public Animation<BlinkAnimation>
 {
 public:
     BlinkAnimation(const SharedPtr<Image>& img, const Rect& rect,
                    std::chrono::milliseconds dur);
 
     void draw() override;
-    void update() override;
+    void change();
 
 private:
     SharedPtr<Image> img_;
 };
 
-class ZoomAnimation : public Animation
+class ZoomAnimation : public Animation<ZoomAnimation>
 {
 public:
     ZoomAnimation(const SharedPtr<Image>& img, const Rect& rect,
                   std::chrono::milliseconds dur);
     void draw() override;
-    void update() override;
+    void change();
 
 private:
     SharedPtr<Image> img_;

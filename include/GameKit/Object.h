@@ -7,25 +7,15 @@
 
 #include <stddef.h>
 
+#include "GameKit/LogHelper.h"
+
 namespace games
 {
-class ObjectBase
+
+template <typename DerivedT>
+class IntrusivePtr
 {
 public:
-    static size_t gMemoryStatistic;
-    ObjectBase();
-    virtual ~ObjectBase();
-    // object is alive, die object should not draw on window and need to destory
-
-    virtual void update() = 0;
-
-    virtual void draw() = 0;
-
-    virtual std::string name()
-    {
-        return "ObjectBase";
-    }
-
     void increase_ref()
     {
         ref_count_++;
@@ -45,6 +35,27 @@ public:
         ref_count_ = 0;
     }
 
+protected:
+    int64_t ref_count_ = 0;
+};
+
+class ObjectBase : public IntrusivePtr<ObjectBase>
+{
+public:
+    static size_t gMemoryStatistic;
+    ObjectBase();
+    virtual ~ObjectBase();
+    // object is alive, die object should not draw on window and need to destory
+
+    virtual void update() = 0;
+
+    virtual void draw() = 0;
+
+    virtual std::string name()
+    {
+        return "ObjectBase";
+    }
+
     virtual void die()
     {
         alive_ = false;
@@ -56,7 +67,6 @@ public:
     }
 
 protected:
-    int64_t ref_count_ = 0;
     int64_t alive_ = 1;
 };
 
@@ -102,6 +112,8 @@ public:
             ptr_->decrease_ref();
             if (0 == ptr_->ref_count())
             {
+                Log::info() << "destroy:" << typeid(*ptr_).name()
+                            << " ref count:" << ptr_->ref_count();
                 delete ptr_;
                 ptr_ = nullptr;
             }

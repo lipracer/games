@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <memory>
 
 namespace games
 {
@@ -58,5 +59,22 @@ struct Rect
 
 std::ostream& operator<<(std::ostream& os, const Point&);
 std::ostream& operator<<(std::ostream& os, const Rect&);
+
+class Image;
+
+class View
+{
+public:
+    View(void* renderer) : renderer_(renderer), rect_(0.0f, 0.0f, 0.0f, 0.0f) {}
+
+    void SetImage(const std::shared_ptr<Image>& img);
+
+    void SetBackground();
+
+private:
+    void* renderer_;
+    Rect rect_;
+    std::shared_ptr<Image> image_;
+};
 
 } // namespace games

@@ -119,11 +119,9 @@ public:
     void update() override;
     void Attack() override;
     void die() override;
-    TankBase* SetLiftCount(size_t c)
-    {
-        alive_ = c;
-        return this;
-    }
+    TankBase* SetLiftCount(size_t c);
+
+    void DieWarning();
 
     std::string name() override
     {

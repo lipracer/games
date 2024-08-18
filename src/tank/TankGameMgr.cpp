@@ -71,14 +71,8 @@ void EnemyTankManager::TryGenerate()
 {
     for (auto iter = gq_.begin(); iter != gq_.end();)
     {
-        bool delay = GAME_MGR().CollsionDetectionTank(rect_[*iter]);
-        if (!delay)
-        {
-            Generate(*iter);
-            iter = gq_.erase(iter);
-            continue;
-        }
-        iter++;
+        Generate(*iter);
+        iter = gq_.erase(iter);
     }
 }
 
