@@ -32,11 +32,13 @@ public:
     virtual ~Object();
 
     Object* SetImage(const SharedPtr<Image>& img);
+    Object* SetWarningImage(const SharedPtr<Image>& img);
     Object* SetRect(const Rect& rect);
     Object* SetSpeed(int64_t speed);
     Object* SetDirection(Direction d);
-    Object* RegistOnKeywardEvent(size_t index);
     Object* SetMap(GameMap* map);
+
+    void SetShowImage(size_t index);
 
     const Rect& rect()
     {
@@ -52,7 +54,7 @@ public:
     }
 
     void draw() override;
-    void update() override {}
+    void update(size_t tick) override {}
     std::string name() override
     {
         return "Object";
@@ -97,17 +99,18 @@ protected:
     Rect rect_;
     Rect next_location_;
     Rect prev_location_;
-    SharedPtr<Image> img_;
+    SharedPtr<Image> img_[2];
     int64_t speed_ = 0;
     Direction direction_ = Direction::kUp;
     GameMap* map_ = nullptr;
     bool maveable_ = true;
+    size_t show_img_index_ = 0;
 };
 
 class HomeObject : public Object
 {
 public:
-    void die() override {}
+    HomeObject() = default;
 };
 
 class Bullet;
@@ -116,9 +119,10 @@ class TankBase : public Object
 {
 public:
     TankBase(const Rect& rect);
-    void update() override;
+
     void Attack() override;
     void die() override;
+
     TankBase* SetLiftCount(size_t c);
 
     void DieWarning();
@@ -130,7 +134,9 @@ public:
 
 protected:
     Bullet* bullet_ = nullptr;
-    size_t update_tick_ = 0;
+    TimerBase::TimerHandle message_timer_handle_;
+    TimerBase::TimerHandle warning_timer_handle_;
+    size_t total_warning_frame_;
 };
 
 class MyTank : public TankBase
@@ -143,9 +149,9 @@ class MyTank : public TankBase
     };
 
 public:
-    MyTank(const Rect& rect) : TankBase(rect), brithplace_(rect) {}
+    MyTank(const Rect& rect);
 
-    void update() override;
+    void update(size_t tick) override;
     void Attack() override;
     void die() override;
 
@@ -163,11 +169,10 @@ private:
 class EnemyTank : public TankBase
 {
 public:
-    EnemyTank(const Rect& rect) : TankBase(rect)
-    {
-        direction_ = Direction::kDown;
-    }
-    void update() override;
+    EnemyTank(const Rect& rect);
+
+    void update(size_t tick) override;
+
     void enable_cd()
     {
         enable_collsion_detection_ = true;
@@ -190,7 +195,7 @@ public:
 
 private:
     bool enable_collsion_detection_ = false;
-    size_t free_path_ = 8;
+    size_t free_path_ = 2;
 };
 
 } // namespace tank

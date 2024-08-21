@@ -1,5 +1,6 @@
 add_commom_library(GameKit OBJECT
     List.cpp
+    Timer.cpp
     Image.cpp
     View.cpp
     Object.cpp

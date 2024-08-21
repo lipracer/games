@@ -5,6 +5,16 @@
 namespace games
 {
 
+GameMgr::~GameMgr()
+{
+    Log::info() << "remaind object size:" << ObjectBase::gMemoryStatistic;
+}
+
+void GameMgr::EmitMessage(GameMessage msg)
+{
+    message_.push(msg);
+}
+
 GameMgrFactory& GameMgrFactory::instance()
 {
     static auto instance = std::make_unique<GameMgrFactory>();

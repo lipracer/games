@@ -129,8 +129,6 @@ public:
     void RegistObject(SharedObject<ObjectBase>&& obj);
     void Remove(ObjectBase* obj);
 
-    void RegistOnKeywardEvent(Object* obj, size_t index);
-
     void SetPass(size_t);
 
     GameMap& GetMap()
@@ -140,6 +138,11 @@ public:
     SharedPtr<Image>* GetEnemyImages()
     {
         return enemy_tank_imgs_;
+    }
+
+    SharedPtr<Image>* GetEnemyWarningImages()
+    {
+        return enemy_tank_warning_imgs_;
     }
 
     SharedPtr<Image> GetBulletImage()
@@ -212,6 +215,8 @@ public:
 
     void GameOver() override;
 
+    void DestroyHome();
+
     void PlayAttack();
 
     // we need update map after all tank object moved, then we can run collsion detection
@@ -219,9 +224,14 @@ public:
     // algorithm to O1
     void UpdateMap();
 
-    void* renderer_ = nullptr;
+    void DestroyAll();
+    
+    bool available() override
+    {
+        return !game_over_;
+    }
 
-    SharedPtr<Image> bakground_img_;
+    void* renderer_ = nullptr;
 
     SharedPtr<Image> home_img_;
     SharedPtr<Image> bad_home_img_;
@@ -230,6 +240,7 @@ public:
     SharedPtr<Image> bullet_img_;
     SharedPtr<Image> boom_img_;
     SharedPtr<Image> enemy_tank_imgs_[3];
+    SharedPtr<Image> enemy_tank_warning_imgs_[3];
 
     SharedPtr<Sound> attack_sound_;
 
@@ -245,15 +256,12 @@ public:
     std::list<SharedObject<ObjectBase>> objs_;
 
     std::list<SharedObject<Object>> moveable_objs_;
-    SharedObject<Object> key_objs_[10];
 
     GameMap map_;
     AlivableObjectMap alivable_map_;
 
     std::function<void(size_t, size_t)>
         draw_functions_[static_cast<size_t>(GameMap::Element::kLast) + 1];
-
-    std::list<std::pair<std::function<void(void)>, int>> listeners_;
 
     SharedPtr<Timer10> timer10_ = std::make_shared<Timer10>();
     SharedPtr<Timer20> timer20_ = std::make_shared<Timer20>();

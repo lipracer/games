@@ -11,12 +11,14 @@ namespace tank
 Bullet::Bullet(Kind kind, const Rect& rect) : Object(rect), kind_(kind)
 {
     GAME_MGR().RegistMoveableObject(this);
+    update_handle_ = GAME_MGR().GetTimer10()->RegistListener(this);
     blockme_locations_.reserve(4);
     prev_location_ = rect_;
 }
 
-void Bullet::update()
+void Bullet::update(size_t tick)
 {
+    EXPECT(alive(), std::string("expect object alive:"));
     if (!TryMove())
     {
         this->die();
@@ -62,6 +64,8 @@ bool Bullet::MeetToDie(Object* obj)
 
 void Bullet::die()
 {
+    Log::info() << "die bullet:" << std::hex << reinterpret_cast<size_t>(this);
+    update_handle_.reset(nullptr);
     Object::die();
     if (!die_animation_)
     {
@@ -114,7 +118,12 @@ bool Bullet::BlockMe(size_t i, size_t j, GameMap::Element& e)
         {
             return true;
         }
-        case GameMap::Element::kHome: GAME_MGR().GameOver(); return true;
+        case GameMap::Element::kHome:
+        {
+            GAME_MGR().DestroyHome();
+            GAME_MGR().EmitMessage(GameMessage::kGameOver);
+            return true;
+        }
     }
     return false;
 }

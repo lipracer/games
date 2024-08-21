@@ -47,7 +47,7 @@ public:
     virtual ~ObjectBase();
     // object is alive, die object should not draw on window and need to destory
 
-    virtual void update() = 0;
+    virtual void update(size_t tick) = 0;
 
     virtual void draw() = 0;
 
@@ -74,12 +74,10 @@ template <typename T>
 class SharedObject
 {
 public:
-    SharedObject() : ptr_(nullptr) {}
-
-    SharedObject(std::nullptr_t) : SharedObject() {}
-    SharedObject(T* ptr) : ptr_(ptr)
+    SharedObject(T* ptr = nullptr) : ptr_(ptr)
     {
-        ptr_->increase_ref();
+        if (ptr_)
+            ptr_->increase_ref();
     }
 
     SharedObject(const SharedObject<T>& other)
@@ -101,7 +99,7 @@ public:
 
     SharedObject& operator=(SharedObject<T>&& other)
     {
-        ptr_ = std::exchange(other.ptr_, nullptr);
+        ptr_ = std::exchange(other.ptr_, ptr_);
         return *this;
     }
 
@@ -109,19 +107,29 @@ public:
     {
         if (ptr_)
         {
-            ptr_->decrease_ref();
-            if (0 == ptr_->ref_count())
+            if (1 == ptr_->ref_count())
             {
                 Log::info() << "destroy:" << typeid(*ptr_).name()
-                            << " ref count:" << ptr_->ref_count();
+                            << " ref count:" << ptr_->ref_count() << " ptr:" << std::hex
+                            << reinterpret_cast<size_t>(ptr_);
                 delete ptr_;
                 ptr_ = nullptr;
             }
             else
             {
+                ptr_->decrease_ref();
                 EXPECT(ptr_->ref_count() >= 1, "ref count mistake");
             }
         }
+    }
+
+    void reset(T* ptr = nullptr)
+    {
+        Log::info() << "reset:" << typeid(*ptr_).name()
+                    << " ref count:" << ptr_->ref_count();
+        if (ptr == ptr_)
+            return;
+        *this = SharedObject<T>(ptr);
     }
 
     template <typename M>

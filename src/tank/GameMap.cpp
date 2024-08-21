@@ -16,14 +16,11 @@ std::string GameMap::to_string(Element e)
     return std::to_string(static_cast<size_t>(e));
 }
 
-GameMap::GameMap()
-    : map_(reinterpret_cast<Element*>(malloc(MAP_W * MAP_H * sizeof(Element))))
-{
-}
+GameMap::GameMap() : map_(MAP_W * MAP_H, Element::kEmpty) {}
 
 void GameMap::LoadMap(std::istream& ifs)
 {
-    std::fill_n(map_.get(), MAP_H * MAP_W, static_cast<char>(Element::kEmpty));
+    std::fill_n(map_.data(), MAP_H * MAP_W, static_cast<char>(Element::kEmpty));
     for (size_t i = 0; i < MAP_W; ++i)
     {
         (*this)[0][i] = Element::kBorder;
@@ -66,7 +63,7 @@ GameMap::SubView<GameMap::Element> GameMap::Lookup(Rect r)
 
     size_t col_e = (r.x + r.w - 1) / ELEMENT_W + 1;
     size_t row_e = (r.y + r.h - 1) / ELEMENT_H + 1;
-    return GameMap::SubView<GameMap::Element>(map_.get() + row * MAP_W + col, row, col,
+    return GameMap::SubView<GameMap::Element>(map_.data() + row * MAP_W + col, row, col,
                                               row_e - row + 1, col_e - col + 1);
 }
 

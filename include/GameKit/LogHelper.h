@@ -9,6 +9,8 @@ namespace games
 
 namespace Log
 {
+
+template <int L>
 struct LogWrap
 {
     template <typename T>
@@ -30,20 +32,40 @@ struct LogWrap
 
     std::stringstream ss_;
 };
-inline LogWrap info()
+
+// release build type disable info log
+#ifndef DEBUG
+template <>
+struct LogWrap<0>
 {
-    return LogWrap("[INFO]");
+    template <typename T>
+    LogWrap& operator<<(T&& t)
+    {
+        return *this;
+    }
+
+    LogWrap(const std::string& str) {}
+
+    ~LogWrap() {}
+};
+
+#endif
+
+inline auto info()
+{
+    return LogWrap<0>("[INFO]");
 }
 
-inline LogWrap warning()
+inline auto warning()
 {
-    return LogWrap("[WARN]");
+    return LogWrap<1>("[WARN]");
 }
 
-inline LogWrap error()
+inline auto error()
 {
-    return LogWrap("[ERROR]");
+    return LogWrap<2>("[ERROR]");
 }
+
 } // namespace Log
 
 #define EXPECT(p, msg)                            \

@@ -60,10 +60,10 @@ void EnemyTankManager::Generate(size_t index)
 {
     auto t = new EnemyTank(rect_[index]);
     t->SetImage(GAME_MGR().GetEnemyImages()[index])
+        ->SetWarningImage(GAME_MGR().GetEnemyWarningImages()[index])
         ->SetSpeed(cfg_[index].speed)
         ->SetMap(&GAME_MGR().GetMap());
     t->SetFreePath(cfg_[index].free_path)->SetLiftCount(cfg_[index].life_count);
-    enemy_tank_[index].emplace_back(t);
     --cfg_[index].total;
 }
 
@@ -128,7 +128,10 @@ TankGameMgr::TankGameMgr()
 #undef ASSIGN_DRAW_FUNCTION
 }
 
-TankGameMgr::~TankGameMgr() {}
+TankGameMgr::~TankGameMgr()
+{
+    Log::info() << "destroy TankGameMgr";
+}
 
 #define PI 3.141592652f
 
@@ -157,6 +160,13 @@ void TankGameMgr::InitGame(void* renderer)
     enemy_tank_imgs_[2] =
         std::make_shared<Image>(renderer, RootResourcePath() + "image/enemy3.bmp");
 
+    enemy_tank_warning_imgs_[0] =
+        std::make_shared<Image>(renderer, RootResourcePath() + "image/enemy1_red.bmp");
+    enemy_tank_warning_imgs_[1] =
+        std::make_shared<Image>(renderer, RootResourcePath() + "image/enemy2_red.bmp");
+    enemy_tank_warning_imgs_[2] =
+        std::make_shared<Image>(renderer, RootResourcePath() + "image/enemy3_red.bmp");
+
     home_img_ = std::make_shared<Image>(renderer, RootResourcePath() + "image/home.bmp");
     bad_home_img_ =
         std::make_shared<Image>(renderer, RootResourcePath() + "image/bad_home.bmp");
@@ -180,14 +190,12 @@ void TankGameMgr::PlayAttack()
 void TankGameMgr::CreateLeftPlayer()
 {
     left_player_ = new MyTank(Rect(0, WINDOW_H - TANK_H, TANK_W, TANK_H));
-    left_player_->SetImage(my_tank_img_)
-        ->RegistOnKeywardEvent(0)
-        ->SetSpeed(5)
-        ->SetMap(&map_);
+    left_player_->SetImage(my_tank_img_)->SetSpeed(5)->SetMap(&map_);
+    Log::info() << "left_player_.get()->ref_count():" << left_player_.get()->ref_count();
+    // EXPECT(left_player_.get()->ref_count() == 4, "");
 
     // right_player_ = new MyTank(Rect(TANK_W, WINDOW_H - TANK_H, TANK_W, TANK_H));
     // right_player_->SetImage(my_tank_img_)
-    //     ->RegistOnKeywardEvent(1)
     //     ->SetSpeed(5)
     //     ->SetMap(&map_);
 }
@@ -196,23 +204,30 @@ void TankGameMgr::CreateRightPlayer() {}
 
 void TankGameMgr::Dispatch_LEFT_Press()
 {
-    key_objs_[0]->MoveTo_LEFT();
-    // key_objs_[1]->MoveTo_LEFT();
+    if (!game_over_)
+        left_player_->MoveTo_LEFT();
+    // right_player_->MoveTo_LEFT();
 }
+
 void TankGameMgr::Dispatch_RIGHT_Press()
 {
-    key_objs_[0]->MoveTo_RIGHT();
-    // key_objs_[1]->MoveTo_RIGHT();
+    if (!game_over_)
+        left_player_->MoveTo_RIGHT();
+    // right_player_->MoveTo_RIGHT();
 }
+
 void TankGameMgr::Dispatch_UP_Press()
 {
-    key_objs_[0]->MoveTo_UP();
-    // key_objs_[1]->MoveTo_UP();
+    if (!game_over_)
+        left_player_->MoveTo_UP();
+    // right_player_->MoveTo_UP();
 }
+
 void TankGameMgr::Dispatch_DOWN_Press()
 {
-    key_objs_[0]->MoveTo_DOWN();
-    // key_objs_[1]->MoveTo_DOWN();
+    if (!game_over_)
+        left_player_->MoveTo_DOWN();
+    // right_player_->MoveTo_DOWN();
 }
 
 void TankGameMgr::Dispatch_LEFT_Release() {}
@@ -291,10 +306,18 @@ bool TankGameMgr::CollsionDetectionTank(const Rect& r)
     return alivable_map_.CollsionDetection(r);
 }
 
-void TankGameMgr::GameOver()
+void TankGameMgr::DestroyHome()
 {
     home_obj_->SetImage(bad_home_img_);
-    game_over_ = true;
+}
+
+void TankGameMgr::GameOver()
+{
+    if (!game_over_)
+    {
+        game_over_ = true;
+        DestroyAll();
+    }
 }
 
 void TankGameMgr::UpdateMap()
@@ -358,32 +381,29 @@ void TankGameMgr::UpdateMap()
 
 void TankGameMgr::DispatchMessage()
 {
-    if (timer10_->update() || timer20_->update() || timer100_->update()
-        || timer1000_->update())
+    while (!message_.empty())
     {
-        if (!game_over_)
+        auto msg = message_.front();
+        message_.pop();
+        if (msg == GameMessage::kGameOver)
         {
-            em_->update();
-
-            RemoveDiedObj(moveable_objs_);
-
-            CollsionDetectionBullet();
-
-            UpdateMap();
+            GameOver();
         }
-        else
-        {
-            for (auto& o : objs_)
-            {
-                if (o->ref_count() && o->alive())
-                {
-                    o->die();
-                }
-                o->draw();
-            }
-            ClearTimer();
-            em_->clear();
-        }
+    }
+    if (game_over_)
+    {
+        return;
+    }
+    if (timer10_->update() || timer20_->update() || timer100_->update()
+        || timer500_->update() || timer1000_->update())
+    {
+        em_->update();
+
+        RemoveDiedObj(moveable_objs_);
+
+        CollsionDetectionBullet();
+
+        UpdateMap();
     }
     for (auto& o : objs_)
     {
@@ -398,11 +418,6 @@ void TankGameMgr::DispatchMessage()
             draw_functions_[e](j - 1, i - 1);
         }
     }
-}
-
-void TankGameMgr::RegistOnKeywardEvent(Object* obj, size_t index)
-{
-    key_objs_[index] = obj;
 }
 
 void TankGameMgr::SetPass(size_t pass)
@@ -421,5 +436,29 @@ void TankGameMgr::SetPass(size_t pass)
     em_->SetPass(pass);
     CreateLeftPlayer();
 }
+
+void TankGameMgr::DestroyAll()
+{
+    Log::info() << "release mgr object";
+
+    // if (home_obj_)
+    //     home_obj_.release();
+
+    Log::info() << "release left_player object";
+    if (left_player_)
+        left_player_.reset();
+    // if (right_player_)
+    //     right_player_.release();
+
+    Log::info() << "clear objs_";
+    objs_.clear();
+
+    Log::info() << "clear moveable_objs_";
+    moveable_objs_.clear();
+
+    Log::info() << "clear timer object";
+    ClearTimer();
+}
+
 } // namespace tank
 } // namespace games

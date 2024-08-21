@@ -153,7 +153,7 @@ public:
 
     Adapter<Element> operator[](size_t index)
     {
-        return map_.get() + index * MAP_W;
+        return map_.data() + index * MAP_W;
     }
 
     SubView<Element> Lookup(Rect r);
@@ -164,12 +164,12 @@ public:
 
     Element* GetData()
     {
-        return map_.get();
+        return map_.data();
     }
 
 private:
     int pass = 0;
-    std::unique_ptr<Element[]> map_;
+    std::vector<Element> map_;
 };
 
 class Object;

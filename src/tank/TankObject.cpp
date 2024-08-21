@@ -25,8 +25,19 @@ Object::~Object() {}
 
 Object* Object::SetImage(const SharedPtr<Image>& img)
 {
-    img_ = img;
+    img_[0] = img;
     return this;
+}
+
+Object* Object::SetWarningImage(const SharedPtr<Image>& img)
+{
+    img_[1] = img;
+    return this;
+}
+
+void Object::SetShowImage(size_t index)
+{
+    show_img_index_ = index;
 }
 
 Object* Object::SetRect(const Rect& rect)
@@ -48,12 +59,6 @@ Object* Object::SetDirection(Direction d)
     return this;
 }
 
-Object* Object::RegistOnKeywardEvent(size_t index)
-{
-    GAME_MGR().RegistOnKeywardEvent(this, index);
-    return this;
-}
-
 Object* Object::SetMap(GameMap* map)
 {
     map_ = map;
@@ -64,8 +69,8 @@ void Object::draw()
 {
     // static double angles[] = {-PI / 2, PI / 2, 0.0, PI};
     static double angles[] = {-90.0, 90.0, 0.0, 180.0};
-    img_->SetAngle(angles[static_cast<size_t>(direction_)]);
-    img_->draw(rect_);
+    img_[show_img_index_]->SetAngle(angles[static_cast<size_t>(direction_)]);
+    img_[show_img_index_]->draw(rect_);
 }
 
 bool Object::TryMove()
@@ -186,6 +191,8 @@ Rect Object::NextLocation()
 
 bool Object::BlockMe(size_t i, size_t j, GameMap::Element& e)
 {
+    EXPECT(i < MAP_W, "");
+    EXPECT(j < MAP_H, "");
     return e != GameMap::Element::kEmpty;
 }
 
@@ -194,12 +201,9 @@ void Object::Attack() {}
 TankBase::TankBase(const Rect& rect) : Object(rect)
 {
     GAME_MGR().RegistMoveableObject(this);
-    GAME_MGR().GetTimer100()->RegistListener(this);
     prev_location_ = rect_;
     next_location_ = rect_;
 }
-
-void TankBase::update() {}
 
 void TankBase::Attack()
 {
@@ -218,7 +222,6 @@ void TankBase::Attack()
         ->SetSpeed(2)
         ->SetMap(map_)
         ->SetDirection(direction_);
-    GAME_MGR().GetTimer10()->RegistListener(bullet_);
     // TODO: mix all of sounds
     // GAME_MGR().PlayAttack();
 }
@@ -231,6 +234,7 @@ void TankBase::die()
         DieWarning();
         return;
     }
+    warning_timer_handle_.reset(nullptr);
     auto animation = CreateAnimation<ZoomAnimation>(GAME_MGR().GetBoomImage(), rect_,
                                                     std::chrono::milliseconds(1000));
     animation->Play();
@@ -245,14 +249,33 @@ TankBase* TankBase::SetLiftCount(size_t c)
 
 void TankBase::DieWarning()
 {
-    auto animation =
-        CreateAnimation<AnimationBase>(10, [&]() { img_->SetBackground(255, 0, 0, 1); });
-    animation->Play();
+    total_warning_frame_ = 0;
+    warning_timer_handle_ = GAME_MGR().GetTimer20()->RegistListener(
+        [=](size_t frame) mutable
+        {
+            ++total_warning_frame_;
+            if (total_warning_frame_ > 10)
+            {
+                warning_timer_handle_ = TimerBase::TimerHandle();
+                this->SetShowImage(0);
+                return;
+            }
+            this->SetShowImage(
+                /*ensure last image is norm*/ (frame + 1) % 2);
+        });
+    Log::info() << "regist object:" << std::hex << reinterpret_cast<size_t>(this);
+}
+////-----------------------------------------------////
+// MyTank
+////-----------------------------------------------////
+MyTank::MyTank(const Rect& rect) : TankBase(rect), brithplace_(rect)
+{
+    message_timer_handle_ = GAME_MGR().GetTimer500()->RegistListener(this);
 }
 
-void MyTank::update()
+void MyTank::update(size_t tick)
 {
-    if (state_ == kPress && update_tick_ % 5 == 0)
+    if (state_ == kPress)
     {
         Attack();
     }
@@ -260,7 +283,6 @@ void MyTank::update()
     {
         // SetState(kDefault);
     }
-    update_tick_++;
 }
 
 void MyTank::Attack()
@@ -295,9 +317,18 @@ void MyTank::SetState(State s)
     state_ = s;
 }
 
-void EnemyTank::update()
+////-----------------------------------------------////
+// EnemyTank
+////-----------------------------------------------////
+EnemyTank::EnemyTank(const Rect& rect) : TankBase(rect)
 {
-    if (update_tick_ % free_path_ == 0)
+    direction_ = Direction::kDown;
+    message_timer_handle_ = GAME_MGR().GetTimer100()->RegistListener(this);
+}
+
+void EnemyTank::update(size_t tick)
+{
+    if (tick % free_path_ == 0)
     {
         SetDirection(static_cast<Direction>(RANDOM(4)));
     }
@@ -305,12 +336,11 @@ void EnemyTank::update()
     {
         SetRect(NextLocation());
     }
-    if (update_tick_ % free_path_ == 0 && (int64_t(rect_.x) % ELEMENT_W == 0)
+    if (tick % free_path_ == 0 && (int64_t(rect_.x) % ELEMENT_W == 0)
         && (int64_t(rect_.y) % ELEMENT_W == 0))
     {
         Attack();
     }
-    update_tick_++;
 }
 } // namespace tank
 } // namespace games

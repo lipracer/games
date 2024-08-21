@@ -101,33 +101,37 @@ int SDL_AppEvent(void* appstate, const SDL_Event* event)
     if (event->type == SDL_EVENT_QUIT)
     {
         app->app_quit = SDL_TRUE;
+        return 0;
     }
-    else if (event->type == SDL_EVENT_KEY_DOWN)
+    if (CurrentMgr() && CurrentMgr()->available())
     {
-        switch (event->key.key)
+        if (event->type == SDL_EVENT_KEY_DOWN)
         {
-            ON_KEYWARD_EVENT(Press, LEFT)
-            ON_KEYWARD_EVENT(Press, RIGHT)
-            ON_KEYWARD_EVENT(Press, UP)
-            ON_KEYWARD_EVENT(Press, DOWN)
-            ON_KEYWARD_EVENT(Press, Q)
-            ON_KEYWARD_EVENT(Press, A)
-            ON_KEYWARD_EVENT(Press, 0)
-            ON_KEYWARD_EVENT(Press, 1)
-            ON_KEYWARD_EVENT(Press, 2)
-            ON_KEYWARD_EVENT(Press, 3)
-            ON_KEYWARD_EVENT(Press, 4)
+            switch (event->key.key)
+            {
+                ON_KEYWARD_EVENT(Press, LEFT)
+                ON_KEYWARD_EVENT(Press, RIGHT)
+                ON_KEYWARD_EVENT(Press, UP)
+                ON_KEYWARD_EVENT(Press, DOWN)
+                ON_KEYWARD_EVENT(Press, Q)
+                ON_KEYWARD_EVENT(Press, A)
+                ON_KEYWARD_EVENT(Press, 0)
+                ON_KEYWARD_EVENT(Press, 1)
+                ON_KEYWARD_EVENT(Press, 2)
+                ON_KEYWARD_EVENT(Press, 3)
+                ON_KEYWARD_EVENT(Press, 4)
+            }
         }
-    }
-    else if (event->type == SDL_EVENT_KEY_UP)
-    {
-        switch (event->key.key)
+        else if (event->type == SDL_EVENT_KEY_UP)
         {
-            ON_KEYWARD_EVENT(Release, LEFT)
-            ON_KEYWARD_EVENT(Release, RIGHT)
-            ON_KEYWARD_EVENT(Release, UP)
-            ON_KEYWARD_EVENT(Release, DOWN)
-            ON_KEYWARD_EVENT(Release, A)
+            switch (event->key.key)
+            {
+                ON_KEYWARD_EVENT(Release, LEFT)
+                ON_KEYWARD_EVENT(Release, RIGHT)
+                ON_KEYWARD_EVENT(Release, UP)
+                ON_KEYWARD_EVENT(Release, DOWN)
+                ON_KEYWARD_EVENT(Release, A)
+            }
         }
     }
 

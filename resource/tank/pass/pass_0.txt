@@ -8,13 +8,13 @@ max_alive=5
 speed=10
 life_count=2
 free_path=10
-total=40
+total=20
 max_alive=15
 [tank]
 speed=10
 life_count=1
 free_path=15
-total=60
+total=20
 max_alive=10
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0

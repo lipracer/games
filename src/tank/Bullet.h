@@ -19,7 +19,7 @@ public:
 
     void die() override;
 
-    void update() override;
+    void update(size_t tick) override;
 
     bool MeetToDie(Object*);
 
@@ -39,6 +39,7 @@ private:
     std::vector<std::tuple<size_t, size_t>> blockme_locations_;
     Kind kind_;
     bool die_animation_ = true;
+    TimerBase::TimerHandle update_handle_;
 };
 } // namespace tank
 } // namespace games

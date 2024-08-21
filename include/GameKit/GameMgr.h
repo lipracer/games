@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <queue>
 #include <unordered_map>
 
 #include "GameKit/LogHelper.h"
@@ -31,12 +32,17 @@ namespace games
     _(8);                  \
     _(9)
 
+enum class GameMessage
+{
+    kGameOver,
+};
+
 class GameMgr
 {
 public:
     static GameMgr* current();
     virtual void DispatchMessage() = 0;
-    virtual ~GameMgr() {}
+    virtual ~GameMgr();
 
     virtual size_t Window_X() = 0;
     virtual size_t Window_Y() = 0;
@@ -51,6 +57,8 @@ public:
 
     virtual size_t PassCount() = 0;
 
+    virtual bool available() = 0;
+
     /// processing keyword message
 #define DEFINE_DISPATCH_PRSS_FUNC(key) \
     virtual void Dispatch_##key##_Press() {}
@@ -62,6 +70,11 @@ public:
 
 #undef DEFINE_DISPATCH_PRSS_FUNC
 #undef DEFINE_DISPATCH_RELEASE_FUNC
+
+    void EmitMessage(GameMessage msg);
+
+protected:
+    std::queue<GameMessage> message_;
 };
 
 class GameMgrFactory

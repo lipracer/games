@@ -10,7 +10,8 @@ class AnimationBase : public ObjectBase
 public:
     static size_t MillPerFrame();
 
-    AnimationBase(size_t frames, const std::function<void(void)>& func);
+    AnimationBase(size_t frames, const std::function<void(size_t)>& func,
+                  const std::function<void(void)>& end_func = {});
 
     void Play();
     void PlayAfter(std::chrono::milliseconds dur);
@@ -27,7 +28,7 @@ public:
 
     void EndPlay();
 
-    void update() final;
+    void update(size_t tick) final;
 
     void draw() override {}
 
@@ -41,7 +42,9 @@ protected:
     size_t animation_frame_ = 0;
     decltype(std::chrono::steady_clock::now()) start_pt_;
     std::chrono::milliseconds delay_;
-    std::function<void(void)> func_;
+    std::function<void(size_t)> func_;
+    std::function<void(void)> end_func_;
+    TimerBase::TimerHandle update_handle_;
 };
 
 template <typename T>
@@ -49,7 +52,7 @@ class Animation : public AnimationBase
 {
 public:
     Animation(size_t frames)
-        : AnimationBase(frames, [=]() { static_cast<T*>(this)->change(); })
+        : AnimationBase(frames, [=](size_t) { static_cast<T*>(this)->change(); })
     {
     }
 };

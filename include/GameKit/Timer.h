@@ -1,93 +1,118 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <list>
+#include <memory>
 
 #include "GameKit/Object.h"
 
 namespace games
 {
 
-template <typename DeriveT>
-class TimerBase
+class TimerBase : public std::enable_shared_from_this<TimerBase>
 {
-public:
-    TimerBase() : st_(std::chrono::steady_clock::now()) {}
-
-    void reset()
+    using ListenerFunc = std::function<void(size_t)>;
+    struct Listener
     {
-        st_ = std::chrono::steady_clock::now();
-    }
-
-    void RegistListener(ObjectBase* listener)
-    {
-        listener_.push_back(listener);
-    }
-
-    bool update()
-    {
-        auto cur_st_ = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(cur_st_ - st_).count()
-            > DeriveT::Duration)
+        Listener(const ListenerFunc& handle, bool active) : handle(handle), active(active)
         {
-            st_ = cur_st_;
-            for (auto iter = listener_.begin(); iter != listener_.end(); iter++)
-            {
-                if (*iter && (*iter)->alive())
-                {
-                    (*iter)->update();
-                }
-            }
-            RemoveDiedObj(listener_);
-            return true;
         }
-        return false;
-    }
+        ListenerFunc handle;
+        bool active;
+    };
 
-    void clear()
+public:
+    using TimerId = typename std::list<Listener>::iterator;
+    struct __TimerHandle
     {
-        RemoveDiedObj(listener_);
+        std::list<Listener>::iterator iter;
+        TimerBase* timer;
+        __TimerHandle(TimerBase* timer, std::list<Listener>::iterator iter)
+            : timer(timer), iter(iter)
+        {
+        }
+        __TimerHandle() : __TimerHandle({}, {}) {}
+        __TimerHandle(const __TimerHandle&) = delete;
+
+        void release()
+        {
+            if (timer)
+            {
+                timer->UnregistListener(iter);
+            }
+        }
+        ~__TimerHandle()
+        {
+            release();
+        }
+    };
+
+    using TimerHandle = std::unique_ptr<__TimerHandle>;
+
+    TimerBase(size_t dur);
+
+    ~TimerBase();
+
+    void reset();
+
+    TimerHandle RegistListener(const ListenerFunc& func);
+    TimerHandle RegistListener(ObjectBase* obj);
+
+    void UnregistListener(TimerId id);
+
+    void GC_Object();
+
+    bool update();
+
+    void clear();
+
+    auto CurrentTP()
+    {
+        return st_;
     }
 
 private:
-    std::list<SharedObject<ObjectBase>> listener_;
+    std::list<Listener> listener_;
+    size_t duration_;
     decltype(std::chrono::steady_clock::now()) st_;
+    size_t tick_;
 };
 
-class Timer10 : public TimerBase<Timer10>
+class Timer10 : public TimerBase
 {
 public:
-    constexpr static size_t Duration = 10;
+    Timer10() : TimerBase(10) {}
 };
 
-class Timer20 : public TimerBase<Timer20>
+class Timer20 : public TimerBase
 {
 public:
-    constexpr static size_t Duration = 20;
+    Timer20() : TimerBase(20) {}
 };
 
-class Timer100 : public TimerBase<Timer100>
+class Timer100 : public TimerBase
 {
 public:
-    constexpr static size_t Duration = 100;
+    Timer100() : TimerBase(100) {}
 };
 
-class Timer500 : public TimerBase<Timer500>
+class Timer500 : public TimerBase
 {
 public:
-    constexpr static size_t Duration = 500;
+    Timer500() : TimerBase(500) {}
 };
 
-class Timer1000 : public TimerBase<Timer1000>
+class Timer1000 : public TimerBase
 {
 public:
-    constexpr static size_t Duration = 1000;
+    Timer1000() : TimerBase(1000) {}
 };
 
-class Timer5000 : public TimerBase<Timer5000>
+class Timer5000 : public TimerBase
 {
 public:
-    constexpr static size_t Duration = 5000;
+    Timer5000() : TimerBase(5000) {}
 };
 
 } // namespace games
